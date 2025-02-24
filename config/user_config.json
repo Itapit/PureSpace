@@ -1,0 +1,49 @@
+{
+    "source_dir": "E:/Backup",
+    "excluded_folders": [
+        "$RECYCLE.BIN",
+        "System Volume Information",
+        "Isolated_Executables",
+        "Sorted_Images_videos",
+        "Unsorted",
+        "duplicates",
+        "Temp_Files",
+        "Unwanted_Files"
+    ],
+    "unwanted_extensions": [
+        ".exe",
+        ".lnk",
+        ".db",
+        ".tmp",
+        ".log",
+        ".bak",
+        ".ini",
+        ".aae",
+        ".thm"
+    ],
+    "unwanted_files": [
+        "Thumbs.db",
+        "Picasa.ini",
+        ".DS_Store"
+    ],
+    "image_extensions": [
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".bmp",
+        ".gif",
+        ".tiff",
+        ".webp"
+    ],
+    "video_extensions": [
+        ".mp4",
+        ".mov",
+        ".avi",
+        ".mkv",
+        ".wmv",
+        ".flv",
+        ".webm",
+        ".m4v"
+    ],
+    "size_threshold_mb": 300
+}
