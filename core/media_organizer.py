@@ -1,9 +1,10 @@
 import os
-from core.helpers import ensure_directory_exists, is_excluded_path, safe_move_file
+from core.helpers import ensure_directory_exists, is_excluded_path, safe_move_file, get_file_hash
 from config.config import config
 from PIL import Image, UnidentifiedImageError
 from datetime import datetime
 import subprocess
+import shutil
 
 
 def get_image_date(file_path):
@@ -108,3 +109,93 @@ def organize_media_by_date(dry_run=False, merge_media=True):
             else:
                 safe_move_file(file_path, new_file_path)
                 print(f"Moved: {file_path} → {new_file_path}")
+
+def move_media_duplicates(config, dry_run=False):
+    """Move duplicate media files (images/videos) within each month folder under Sorted_Media."""
+    sorted_media_dir = os.path.join(config.get("source_dir"), "Sorted_Media")
+    excluded_folders = config.get("excluded_folders")
+    media_extensions = config.get("image_extensions") + config.get("video_extensions")
+
+    if not os.path.exists(sorted_media_dir):
+        print(f"Sorted media directory not found: {sorted_media_dir}")
+        return
+
+    # Walk through each year and month folder
+    for year in os.listdir(sorted_media_dir):
+        year_path = os.path.join(sorted_media_dir, year)
+        if not os.path.isdir(year_path):
+            continue
+
+        for month in os.listdir(year_path):
+            month_path = os.path.join(year_path, month)
+            if not os.path.isdir(month_path) or is_excluded_path(month_path, excluded_folders):
+                continue
+
+            print(f"Scanning for duplicates in: {month_path}")
+            file_hashes = {}  # Reset hashes for each month
+            duplicates_folder = os.path.join(month_path, "Duplicates")
+            ensure_directory_exists(duplicates_folder)
+
+            # Scan all files in the current month folder
+            for file in os.listdir(month_path):
+                file_path = os.path.join(month_path, file)
+                if not os.path.isfile(file_path):
+                    continue
+
+                # Check if it's a media file
+                file_ext = os.path.splitext(file)[1].lower()
+                if file_ext not in media_extensions:
+                    continue
+
+                # Generate hash and detect duplicates
+                file_hash = get_file_hash(file_path)
+                if file_hash in file_hashes:
+                    duplicate_path = os.path.join(duplicates_folder, file)
+                    
+                    # Avoid overwriting duplicates
+                    counter = 1
+                    while os.path.exists(duplicate_path):
+                        base, ext = os.path.splitext(file)
+                        duplicate_path = os.path.join(duplicates_folder, f"{base}_{counter}{ext}")
+                        counter += 1
+
+                    if dry_run:
+                        print(f"[DRY RUN] Would move duplicate: {file_path} → {duplicate_path}")
+                    else:
+                        safe_move_file(file_path, duplicate_path)
+                        print(f"Moved duplicate: {file_path} → {duplicate_path}")
+                else:
+                    file_hashes[file_hash] = file_path 
+
+def delete_duplicates_folders(config, dry_run=True):
+    """Delete 'Duplicates' folders under Sorted_Media, including all contents."""
+    sorted_media_dir = os.path.join(config.get("source_dir"), "Sorted_Media")
+    excluded_folders = config.get("excluded_folders")
+
+    if not os.path.exists(sorted_media_dir):
+        print(f"Sorted media directory not found: {sorted_media_dir}")
+        return
+
+    # Walk through each year and month folder in Sorted_Media
+    for year in os.listdir(sorted_media_dir):
+        year_path = os.path.join(sorted_media_dir, year)
+        if not os.path.isdir(year_path):
+            continue
+
+        for month in os.listdir(year_path):
+            month_path = os.path.join(year_path, month)
+            if not os.path.isdir(month_path) or is_excluded_path(month_path, excluded_folders):
+                continue
+
+            duplicates_folder = os.path.join(month_path, "Duplicates")
+            if os.path.exists(duplicates_folder):
+                if dry_run:
+                    print(f"[DRY RUN] Would delete folder: {duplicates_folder}")
+                else:
+                    try:
+                        shutil.rmtree(duplicates_folder)
+                        print(f"Deleted folder: {duplicates_folder}")
+                    except PermissionError:
+                        print(f"Permission denied: {duplicates_folder}")
+                    except OSError as e:
+                        print(f"Error deleting {duplicates_folder}: {e}")

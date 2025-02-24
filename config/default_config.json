@@ -2,10 +2,10 @@
   "source_dir": "D:/",
   "excluded_folders": [
     "$RECYCLE.BIN", "System Volume Information",
-    "Sorted_Images_videos", "Unsorted", "duplicates", "Temp_Files", "Unwanted_Files"
+    "Sorted_Media", "Unsorted", "Duplicates", "Temp_Files", "Unwanted_Files"
   ],
   "unwanted_extensions": [".exe", ".lnk", ".db", ".tmp", ".log", ".bak", ".ini", ".aae", ".thm"],
-  "unwanted_files": ["Thumbs.db", "Picasa.ini", ".DS_Store"],
+  "unwanted_files": ["thumbs.db", "picasa.ini", ".ds_store"],
   "image_extensions": [".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".webp"],
   "video_extensions": [".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv", ".webm", ".m4v"],
   "size_threshold_mb": 500
