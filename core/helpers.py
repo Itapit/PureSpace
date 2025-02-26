@@ -38,4 +38,4 @@ def bytes_to_mb(size_in_bytes):
 
 def is_excluded_path(path, excluded_folders):
     """Check if a path should be excluded based on defined folders."""
-    return any(folder in path for folder in excluded_folders)
+    return any(os.path.commonpath([path, os.path.abspath(folder)]) == os.path.abspath(folder) for folder in excluded_folders)

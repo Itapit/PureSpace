@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext, simpledialog
 import os
 import sys
+import re
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from core import *
@@ -153,7 +154,7 @@ class MediaOrganizerApp:
 
     def open_settings(self):
         """Opens a simple GUI to modify user_config.json."""
-        settings_window = tk.Toplevel(self.root)
+        settings_window = tk.Toplevel(root)
         settings_window.title("Settings")
         settings_window.geometry("500x400")
 
@@ -161,18 +162,32 @@ class MediaOrganizerApp:
 
         config_entries = {}
         for key, value in config.config.items():
+            # Ensure lists are displayed correctly
+            if isinstance(value, list):
+                display_value = ", ".join(value)  # Convert list to clean string
+            else:
+                display_value = str(value)
+
             tk.Label(settings_window, text=key).pack()
             entry = tk.Entry(settings_window, width=50)
-            entry.insert(0, str(value))
+            entry.insert(0, display_value)  # Display a clean string
             entry.pack()
             config_entries[key] = entry
 
         def save_config():
-            """Saves new config values using the Config class."""
+            """Ensures user input is stored correctly, preventing list misformatting."""
             new_values = {}
             for key, entry in config_entries.items():
                 try:
-                    new_values[key] = int(entry.get()) if key == "size_threshold_mb" else entry.get()
+                    if key == "size_threshold_mb":
+                        new_values[key] = int(entry.get())  # Ensure numeric values remain integers
+                    elif key in ["excluded_folders", "unwanted_extensions", "unwanted_files", "image_extensions", "video_extensions"]:
+                        # Remove unwanted brackets/quotes before saving
+                        raw_text = entry.get()
+                        cleaned_list = re.sub(r"[\[\]']", "", raw_text).split(",")  # Remove brackets & single quotes
+                        new_values[key] = [item.strip() for item in cleaned_list if item.strip()]  # Ensure valid list
+                    else:
+                        new_values[key] = entry.get()
                 except ValueError:
                     messagebox.showerror("Error", f"Invalid value for {key}")
                     return
