@@ -18,6 +18,11 @@ def is_folder_empty(folder_path):
     """Check if a folder is empty."""
     return not os.listdir(folder_path)
 
+
+class FileMoveError(Exception):
+    """Custom exception for file movement failures."""
+    pass
+
 def safe_move_file(src, dest):
     """Move a file to the destination, avoiding overwrites by appending a counter."""
     base, ext = os.path.splitext(dest)
@@ -29,8 +34,8 @@ def safe_move_file(src, dest):
         shutil.move(src, dest)
         return dest
     except Exception as e:
-        print(f"Error moving {src} to {dest}: {e}")
-        return None
+        raise FileMoveError(f"Failed to move {src} to {dest}: {e}")
+
 
 def bytes_to_mb(size_in_bytes):
     """Convert bytes to megabytes (MB)."""
@@ -39,3 +44,15 @@ def bytes_to_mb(size_in_bytes):
 def is_excluded_path(path, excluded_folders):
     """Check if a path should be excluded based on defined folders."""
     return any(os.path.commonpath([path, os.path.abspath(folder)]) == os.path.abspath(folder) for folder in excluded_folders)
+
+class DirectoryNotFoundError(Exception):
+    """Custom exception for when the source directory is missing."""
+    pass
+
+def validate_source_dir(source_dir):
+    """Check if the source directory exists and is accessible."""
+    
+    if not source_dir or not os.path.exists(source_dir):
+        raise DirectoryNotFoundError(f"Source directory does not exist: {source_dir}")
+
+    return True

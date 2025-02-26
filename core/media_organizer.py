@@ -1,6 +1,7 @@
 import os
-from core.helpers import ensure_directory_exists, is_excluded_path, safe_move_file, get_file_hash
-from config.config import config
+from core.helpers import ensure_directory_exists, is_excluded_path, safe_move_file, get_file_hash, validate_source_dir
+from services.services import config
+from services.services import logger
 from PIL import Image, UnidentifiedImageError
 from datetime import datetime
 import subprocess
@@ -22,7 +23,7 @@ def get_image_date(file_path):
     try:
         return datetime.fromtimestamp(os.path.getmtime(file_path))
     except OSError:
-        print(f"Warning: Could not access file date for {file_path}")
+        logger.warning(f"Warning: Could not access file date for {file_path}")
         return None
 
 def get_video_date(file_path):
@@ -48,8 +49,18 @@ def get_video_date(file_path):
     try:
         return datetime.fromtimestamp(os.path.getmtime(file_path))
     except OSError:
-        print(f"Warning: Could not access file date for {file_path}")
+        logger.warning(f"Warning: Could not access file date for {file_path}")
         return None
+
+def check_ffmpeg_installed():
+    """Check if FFmpeg is installed on the system."""
+    try:
+        subprocess.run(["ffmpeg", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        logger.info("FFmpeg is installed.")
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        logger.error("FFmpeg is not installed. Please install FFmpeg to process videos.")
+        return False
 
 def organize_media_by_date(dry_run=False, merge_media=True):
     """Organize images and videos into year/month folders. Optionally merge them into separate folders."""
@@ -57,6 +68,7 @@ def organize_media_by_date(dry_run=False, merge_media=True):
     image_extensions = config.get("image_extensions")
     video_extensions = config.get("video_extensions")
     excluded_folders = config.get("excluded_folders")
+    validate_source_dir(source_dir)
 
     # Choose destination folders based on merge setting
     base_folder = os.path.join(source_dir, "Sorted_Media")
@@ -91,10 +103,10 @@ def organize_media_by_date(dry_run=False, merge_media=True):
                 new_file_path = os.path.join(unsorted_folder, file)
 
                 if dry_run:
-                    print(f"[DRY RUN] Would move to Unsorted: {file_path} → {new_file_path}")
+                    logger.info(f"[DRY RUN] Would move to Unsorted: {file_path} → {new_file_path}")
                 else:
                     safe_move_file(file_path, new_file_path)
-                    print(f"[Unsorted] Moved: {file_path} → {new_file_path}")
+                    logger.info(f"[Unsorted] Moved: {file_path} → {new_file_path}")
                 continue
 
             # Organize by Year/Month
@@ -105,19 +117,21 @@ def organize_media_by_date(dry_run=False, merge_media=True):
             # Move the file
             new_file_path = os.path.join(dest_folder, file)
             if dry_run:
-                print(f"[DRY RUN] Would move: {file_path} → {new_file_path}")
+                logger.info(f"[DRY RUN] Would move: {file_path} → {new_file_path}")
             else:
                 safe_move_file(file_path, new_file_path)
-                print(f"Moved: {file_path} → {new_file_path}")
+                logger.info(f"Moved: {file_path} → {new_file_path}")
 
 def move_media_duplicates(dry_run=False):
     """Move duplicate media files (images/videos) within each month folder under Sorted_Media."""
-    sorted_media_dir = os.path.join(config.get("source_dir"), "Sorted_Media")
+    source_dir = config.get("source_dir")
+    sorted_media_dir = os.path.join(source_dir, "Sorted_Media")
     excluded_folders = config.get("excluded_folders")
     media_extensions = config.get("image_extensions") + config.get("video_extensions")
+    validate_source_dir(source_dir)
 
     if not os.path.exists(sorted_media_dir):
-        print(f"Sorted media directory not found: {sorted_media_dir}")
+        logger.warning(f"Sorted media directory not found: {sorted_media_dir}")
         return
 
     # Walk through each year and month folder
@@ -131,7 +145,7 @@ def move_media_duplicates(dry_run=False):
             if not os.path.isdir(month_path) or is_excluded_path(month_path, excluded_folders):
                 continue
 
-            print(f"Scanning for duplicates in: {month_path}")
+            logger.info(f"Scanning for duplicates in: {month_path}")
             file_hashes = {}  # Reset hashes for each month
             duplicates_folder = os.path.join(month_path, "Duplicates")
             ensure_directory_exists(duplicates_folder)
@@ -160,20 +174,22 @@ def move_media_duplicates(dry_run=False):
                         counter += 1
 
                     if dry_run:
-                        print(f"[DRY RUN] Would move duplicate: {file_path} → {duplicate_path}")
+                        logger.info(f"[DRY RUN] Would move duplicate: {file_path} → {duplicate_path}")
                     else:
                         safe_move_file(file_path, duplicate_path)
-                        print(f"Moved duplicate: {file_path} → {duplicate_path}")
+                        logger.info(f"Moved duplicate: {file_path} → {duplicate_path}")
                 else:
                     file_hashes[file_hash] = file_path 
 
 def delete_duplicates_folders(dry_run=True):
     """Delete 'Duplicates' folders under Sorted_Media, including all contents."""
-    sorted_media_dir = os.path.join(config.get("source_dir"), "Sorted_Media")
+    source_dir = config.get("source_dir")
+    sorted_media_dir = os.path.join(source_dir, "Sorted_Media")
     excluded_folders = config.get("excluded_folders")
+    validate_source_dir(source_dir)
 
     if not os.path.exists(sorted_media_dir):
-        print(f"Sorted media directory not found: {sorted_media_dir}")
+        logger.warning(f"Sorted media directory not found: {sorted_media_dir}")
         return
 
     # Walk through each year and month folder in Sorted_Media
@@ -190,12 +206,12 @@ def delete_duplicates_folders(dry_run=True):
             duplicates_folder = os.path.join(month_path, "Duplicates")
             if os.path.exists(duplicates_folder):
                 if dry_run:
-                    print(f"[DRY RUN] Would delete folder: {duplicates_folder}")
+                    logger.info(f"[DRY RUN] Would delete folder: {duplicates_folder}")
                 else:
                     try:
                         shutil.rmtree(duplicates_folder)
-                        print(f"Deleted folder: {duplicates_folder}")
+                        logger.info(f"Deleted folder: {duplicates_folder}")
                     except PermissionError:
-                        print(f"Permission denied: {duplicates_folder}")
+                        logger.warning(f"Permission denied: {duplicates_folder}")
                     except OSError as e:
-                        print(f"Error deleting {duplicates_folder}: {e}")
+                        logger.warning(f"Error deleting {duplicates_folder}: {e}")

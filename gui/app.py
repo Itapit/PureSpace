@@ -1,13 +1,12 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox, scrolledtext, simpledialog
+from tkinter import filedialog, messagebox, scrolledtext
 import os
 import sys
 import re
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from core import *
-from config.config import config
-
+from services.services import *
 
 class MediaOrganizerApp:
     def __init__(self, root):
@@ -113,6 +112,9 @@ class MediaOrganizerApp:
         try:
             organize_media_by_date(dry_run=dry_run, merge_media=merge_files)
             self.log("Media organized successfully!")
+        except DirectoryNotFoundError as e:
+            self.log(f"Error: {e}")
+            messagebox.showerror("Error", str(e)) 
         except Exception as e:
             self.log(f"Error: {e}")
 
@@ -125,10 +127,11 @@ class MediaOrganizerApp:
             if delete_after_move:
                 delete_duplicates_folders(dry_run=dry_run)
                 self.log("Duplicates deleted successfully!")
-
+        except DirectoryNotFoundError as e:
+            self.log(f"Error: {e}")
+            messagebox.showerror("Error", str(e)) 
         except Exception as e:
             self.log(f"Error: {e}")
-
 
     def clean_empty(self, dry_run, _):
         self.log(f"Cleaning empty files/folders... (Dry Run: {dry_run})")
@@ -136,6 +139,9 @@ class MediaOrganizerApp:
             delete_empty_files(dry_run=dry_run)
             delete_empty_folders(dry_run=dry_run)
             self.log("Empty files and folders removed!")
+        except DirectoryNotFoundError as e:
+            self.log(f"Error: {e}")
+            messagebox.showerror("Error", str(e)) 
         except Exception as e:
             self.log(f"Error: {e}")
 
@@ -144,6 +150,9 @@ class MediaOrganizerApp:
         try:
             find_large_files()
             self.log("Large file search completed!")
+        except DirectoryNotFoundError as e:
+            self.log(f"Error: {e}")
+            messagebox.showerror("Error", str(e)) 
         except Exception as e:
             self.log(f"Error: {e}")
 
@@ -192,7 +201,7 @@ class MediaOrganizerApp:
                     messagebox.showerror("Error", f"Invalid value for {key}")
                     return
 
-            config.set(**new_values)  
+            config.update(**new_values)  
             messagebox.showinfo("Success", "Configuration updated successfully!")
 
         save_button = tk.Button(settings_window, text="Save", command=save_config)
@@ -215,8 +224,14 @@ class MediaOrganizerApp:
         """
         messagebox.showinfo("How to Use", help_text)
 
+def check_dependencies():
+    """Checks system dependencies and alerts the user if something is missing."""
+    if not check_ffmpeg_installed():
+        messagebox.showerror("Missing Dependency", "FFmpeg is not installed.\nPlease install it to enable video sorting.")
+
 # Run the application
 if __name__ == "__main__":
+    check_dependencies()
     root = tk.Tk()
     app = MediaOrganizerApp(root)
     root.mainloop()
