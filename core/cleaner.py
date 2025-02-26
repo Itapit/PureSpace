@@ -63,7 +63,7 @@ def find_large_files():
             if size_mb > size_threshold_mb:
                 print(f"Large file found: {file_path} ({size_mb:.2f} MB)")
 
-def move_unwanted_files(config, dry_run=True):
+def move_unwanted_files(dry_run=True):
     """Move unwanted files by extension or name to the Unwanted_Files folder."""
     source_dir = config.get("source_dir")
     unwanted_extensions = config.get("unwanted_extensions", [])

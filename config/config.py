@@ -49,6 +49,21 @@ class Config(metaclass=SingletonMeta):
     def get(self, key):
         """Retrieve a value from the configuration."""
         return self.config.get(key)
+    
+    def set(self, **kwargs):
+        """Update configuration values and save them."""
+        valid_keys = set(self.config.keys())  # Ensure we only update valid keys
+        updated_keys = {}
+
+        for key, value in kwargs.items():
+            if key in valid_keys:
+                self.config[key] = value
+                updated_keys[key] = value
+            else:
+                print(f"Warning: {key} is not a valid config key.")
+        if updated_keys:
+            self._save_user_config()
+            print("Updated settings:", updated_keys)
 
     def update(self, **kwargs):
         """Update configuration values and save to user_config.json."""

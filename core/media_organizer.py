@@ -110,7 +110,7 @@ def organize_media_by_date(dry_run=False, merge_media=True):
                 safe_move_file(file_path, new_file_path)
                 print(f"Moved: {file_path} → {new_file_path}")
 
-def move_media_duplicates(config, dry_run=False):
+def move_media_duplicates(dry_run=False):
     """Move duplicate media files (images/videos) within each month folder under Sorted_Media."""
     sorted_media_dir = os.path.join(config.get("source_dir"), "Sorted_Media")
     excluded_folders = config.get("excluded_folders")
@@ -167,7 +167,7 @@ def move_media_duplicates(config, dry_run=False):
                 else:
                     file_hashes[file_hash] = file_path 
 
-def delete_duplicates_folders(config, dry_run=True):
+def delete_duplicates_folders(dry_run=True):
     """Delete 'Duplicates' folders under Sorted_Media, including all contents."""
     sorted_media_dir = os.path.join(config.get("source_dir"), "Sorted_Media")
     excluded_folders = config.get("excluded_folders")
