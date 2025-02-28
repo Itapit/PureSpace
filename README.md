@@ -42,58 +42,48 @@ This project was written over just a few days, so there are probably **some bugs
 ---
 
 ## ✨ Features
-Sort images and videos into year/month folders automatically.
-
-Detect and move duplicate files to a dedicated folder.
-
-Find and delete empty files/folders.
-
-Identify and list large files over a size threshold.
-
-Move unwanted files (based on extensions/names) into a cleanup folder.
-
-Fully configurable via Settings in the app.
+- Sort images and videos into year/month folders automatically.
+- Detect and move duplicate files to a dedicated folder.
+- Find and delete empty files/folders.
+- Identify and list large files over a size threshold.
+- Move unwanted files (based on extensions/names) into a cleanup folder.
+- Fully configurable via Settings in the app.
 
 ---
 
 ## 🖥️ Technologies Used
-Python 3.x
-
-Tkinter (GUI)
-
-Pillow (Image metadata handling)
-
-FFmpeg (Video metadata extraction)
-
-Logging (via Python logging module)
-
-JSON (for configuration)
+- Python 3.x
+- Tkinter (GUI)
+- Pillow (Image metadata handling)
+- FFmpeg (Video metadata extraction)
+- Logging (via Python logging module)
+- JSON (for configuration)
 
 
 ---
 ## ⚙️ Installation and setup
-Step 1: Clone the Repository
+### Step 1: Clone the Repository
 ```bash
 git clone https://github.com/Itapit/PureSpace.git
 cd PureSpace
 ```
-Step 2: Create Virtual Environment (Optional but Recommended)
+### Step 2: Create Virtual Environment (Optional but Recommended)
 ```bash
 python -m venv venv
 source venv/bin/activate  # Linux/macOS
 venv\Scripts\activate     # Windows
 ```
-Step 3: Install Dependencies
+### Step 3: Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
-Step 4: Ensure FFmpeg is Installed
+### Step 4: Ensure FFmpeg is Installed
 
 Download FFmpeg
 
 Add FFmpeg to your system PATH so the app can find it.
 
-#### ▶️ Running the Application
+### ▶️ Running the Application
 ```bash
 python gui/app.py
 ```
@@ -109,7 +99,7 @@ services/user_config.json (optional user overrides, saved via the GUI Settings w
 
 ---
 
-📊 Example Folder Structure After Sorting
+## 📊 Example Folder Structure After Sorting
 ```text
 D:/
 ├── Sorted_Media/
@@ -147,7 +137,7 @@ I strongly recommend enabling **"View Hidden Files/Folders"** in your file explo
 ---
 
 ## Contributing
-Feel free to fork this repository and submit a pull request with any improvements!
+If you want to improve this project, feel free to **fork** the repository and submit a **pull request** with your changes. Contributions are always welcome!
 
 ---
 
