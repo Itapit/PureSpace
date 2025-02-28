@@ -39,27 +39,33 @@ class MediaOrganizerApp:
             "Organize Media",
             self.organize_media,
             "Sorts images and videos into year/month folders.",
-            ["source_dir", "excluded_folders", "image_extensions", "video_extensions"],
+            ["source_dir", "image_extensions", "video_extensions"],
             extra_option_label="Sort All Files"
         )
         self.create_action_button(
             "Move Duplicates",
             self.move_duplicates,
             "Moves duplicate media files to a dedicated folder.",
-            ["source_dir", "excluded_folders"],
+            ["source_dir"],
             extra_option_label="Delete Duplicates"
         )
         self.create_action_button(
             "Clean Empty Files/Folders",
             self.clean_empty,
             "Deletes empty files and folders in the source directory.",
-            ["source_dir", "excluded_folders"]
+            ["source_dir"]
         )
         self.create_action_button(
             "Find Large Files",
             self.find_large_files,
             "Lists all files larger than the defined size threshold.",
-            ["source_dir", "excluded_folders", "size_threshold_mb"]
+            ["source_dir", "size_threshold_mb"]
+        )
+        self.create_action_button(
+            "Move unwanted files",
+            self.move_unwanted_files,
+            "moves all of the unwanted file extensions and specific file names",
+            ["source_dir", "unwanted_files", "unwanted_extensions"]
         )
 
         # Log Output
@@ -156,6 +162,17 @@ class MediaOrganizerApp:
         except Exception as e:
             self.log(f"Error: {e}")
 
+    def move_unwanted_files(self, dry_run, _):
+        self.log(f"Moving Unwanted files...  (Dry Run: {dry_run})")
+        try:
+            move_unwanted_files(dry_run=dry_run)
+            self.log("Moving unwanted files completed!")
+        except DirectoryNotFoundError as e:
+            self.log(f"Error: {e}")
+            messagebox.showerror("Error", str(e))
+        except Exception as e:
+            self.log(f"Error: {e}")
+        
     def log(self, message):
         """Log messages to the GUI output."""
         self.log_output.insert(tk.END, message + "\n")
