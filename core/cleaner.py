@@ -1,18 +1,15 @@
 import os
 from core.helpers import ensure_directory_exists, is_folder_empty, bytes_to_mb, is_excluded_path, safe_move_file, validate_source_dir, FileMoveError
 from services.services import *
+from core.wrappers import operation_wrapper,with_dry_run,walk_directory
 
-
-def delete_empty_files(dry_run=False):
+@operation_wrapper
+@with_dry_run(default=False)
+def delete_empty_files(source_dir, dry_run):
     """Delete empty files while skipping excluded directories. Set dry_run=True to simulate the process."""
-    source_dir = config.get("source_dir")
     excluded_folders = config.get("excluded_folders")
-    validate_source_dir(source_dir)
 
-    for root, _, files in os.walk(source_dir):
-        if is_excluded_path(root, excluded_folders):
-            continue
-
+    for root, _, files in walk_directory(source_dir, excluded_folders):
         for file in files:
             file_path = os.path.join(root, file)
             if os.path.getsize(file_path) == 0:
@@ -22,16 +19,13 @@ def delete_empty_files(dry_run=False):
                     os.remove(file_path)
                     logger.info(f"Deleted empty file: {file_path}")
 
-def delete_empty_folders(dry_run=False):
+@operation_wrapper
+@with_dry_run(default=False)
+def delete_empty_folders(source_dir, dry_run):
     """Delete empty folders while skipping excluded directories. Set dry_run=True to simulate the process."""
-    source_dir = config.get("source_dir")
     excluded_folders = config.get("excluded_folders")
-    validate_source_dir(source_dir)
 
-    for root, dirs, _ in os.walk(source_dir, topdown=False):
-        if is_excluded_path(root, excluded_folders):
-            continue
-
+    for root, dirs, _ in walk_directory(source_dir, excluded_folders, topdown=False):
         for folder in dirs:
             folder_path = os.path.join(root, folder)
             if is_excluded_path(folder_path, excluded_folders):
@@ -41,47 +35,35 @@ def delete_empty_folders(dry_run=False):
                 if dry_run:
                     logger.info(f"[DRY RUN] Would delete empty folder: {folder_path}")
                 else:
-                    try:
-                        os.rmdir(folder_path)
-                        logger.info(f"Deleted empty folder: {folder_path}")
-                    except PermissionError:
-                        logger.warning(f"Warning: Skipped (Permission Denied) → {folder_path}")
-                    except OSError as e:
-                        logger.warning(f"Warning: Could not delete {folder_path}: {e}")
+                    os.rmdir(folder_path)
+                    logger.info(f"Deleted empty folder: {folder_path}")
 
-def find_large_files():
+@operation_wrapper
+def find_large_files(source_dir):
     """Find files larger than the defined size threshold."""
-    source_dir = config.get("source_dir")
     excluded_folders = config.get("excluded_folders")
     size_threshold_mb = config.get("size_threshold_mb")
-    validate_source_dir(source_dir)
 
-    for root, _, files in os.walk(source_dir):
-        if is_excluded_path(root, excluded_folders):
-                continue
-
+    for root, _, files in walk_directory(source_dir, excluded_folders):
         for file in files:
             file_path = os.path.join(root, file)
             size_mb = bytes_to_mb(os.path.getsize(file_path))
             if size_mb > size_threshold_mb:
                 logger.info(f"Large file found: {file_path} ({size_mb:.2f} MB)")
 
-def move_unwanted_files(dry_run=False):
+@operation_wrapper
+@with_dry_run(default=False)
+def move_unwanted_files(source_dir, dry_run):
     """Move unwanted files by extension or name to the Unwanted_Files folder."""
-    source_dir = config.get("source_dir")
     unwanted_extensions = config.get("unwanted_extensions")
     unwanted_files = config.get("unwanted_files")
     excluded_folders = config.get("excluded_folders")
     unwanted_folder = os.path.join(source_dir, "Unwanted_Files")
-    validate_source_dir(source_dir)
 
     ensure_directory_exists(unwanted_folder)
 
     # Walk through the source directory, skipping excluded folders
-    for root, _, files in os.walk(source_dir):
-        if is_excluded_path(root, excluded_folders):
-            continue
-
+    for root, _, files in walk_directory(source_dir, excluded_folders):
         for file in files:
             file_path = os.path.join(root, file)
             file_ext = os.path.splitext(file)[1].lower()
@@ -93,10 +75,5 @@ def move_unwanted_files(dry_run=False):
                 if dry_run:
                     logger.info(f"[DRY RUN] Would move: {file_path} -> {destination_path}")
                 else:
-                    try:
-                        safe_move_file(file_path, destination_path)
-                        logger.info(f"Moved: {file_path} -> {destination_path}")
-                    except FileMoveError as e:
-                        logger.warning(f"Failed to move file: {e}")
-                    except (PermissionError, OSError) as e:
-                        logger.warning(f"Failed to move {file_path}: {e}")
+                    safe_move_file(file_path, destination_path)
+                    logger.info(f"Moved: {file_path} -> {destination_path}")

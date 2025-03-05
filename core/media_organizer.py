@@ -1,5 +1,6 @@
 import os
 from core.helpers import ensure_directory_exists, is_excluded_path, safe_move_file, get_file_hash, validate_source_dir
+from core.wrappers import operation_wrapper,with_dry_run,walk_directory
 from services.services import config
 from services.services import logger
 from PIL import Image, UnidentifiedImageError
@@ -62,13 +63,13 @@ def check_ffmpeg_installed():
         logger.error("FFmpeg is not installed. Please install FFmpeg to process videos.")
         return False
 
-def organize_media_by_date(dry_run=False, merge_media=True):
+@operation_wrapper
+@with_dry_run(default=False)
+def organize_media_by_date(source_dir, dry_run, merge_media=True):
     """Organize images and videos into year/month folders. Optionally merge them into separate folders."""
-    source_dir = config.get("source_dir")
     image_extensions = config.get("image_extensions")
     video_extensions = config.get("video_extensions")
     excluded_folders = config.get("excluded_folders")
-    validate_source_dir(source_dir)
 
     # Choose destination folders based on merge setting
     base_folder = os.path.join(source_dir, "Sorted_Media")
@@ -77,10 +78,7 @@ def organize_media_by_date(dry_run=False, merge_media=True):
     video_folder = media_folder if merge_media else os.path.join(base_folder, "Videos")
 
     # Process both images and videos
-    for root, _, files in os.walk(source_dir):
-        if is_excluded_path(root, excluded_folders):
-            continue
-
+    for root, _, files in walk_directory(source_dir, excluded_folders):
         for file in files:
             file_ext = os.path.splitext(file)[1].lower()
             file_path = os.path.join(root, file)
@@ -122,17 +120,15 @@ def organize_media_by_date(dry_run=False, merge_media=True):
                 safe_move_file(file_path, new_file_path)
                 logger.info(f"Moved: {file_path} → {new_file_path}")
 
-def move_media_duplicates(dry_run=False):
+@operation_wrapper
+@with_dry_run(default=False)
+def move_media_duplicates(source_dir, dry_run):
     """Move duplicate media files (images/videos) within each month folder under Sorted_Media."""
-    source_dir = config.get("source_dir")
     sorted_media_dir = os.path.join(source_dir, "Sorted_Media")
     excluded_folders = config.get("excluded_folders")
     media_extensions = config.get("image_extensions") + config.get("video_extensions")
-    validate_source_dir(source_dir)
 
-    if not os.path.exists(sorted_media_dir):
-        logger.warning(f"Sorted media directory not found: {sorted_media_dir}")
-        return
+    ensure_directory_exists(sorted_media_dir)
 
     # Walk through each year and month folder
     for year in os.listdir(sorted_media_dir):
@@ -181,16 +177,14 @@ def move_media_duplicates(dry_run=False):
                 else:
                     file_hashes[file_hash] = file_path 
 
-def delete_duplicates_folders(dry_run=True):
+@operation_wrapper
+@with_dry_run(default=False)
+def delete_duplicates_folders(source_dir, dry_run):
     """Delete 'Duplicates' folders under Sorted_Media, including all contents."""
-    source_dir = config.get("source_dir")
     sorted_media_dir = os.path.join(source_dir, "Sorted_Media")
     excluded_folders = config.get("excluded_folders")
-    validate_source_dir(source_dir)
 
-    if not os.path.exists(sorted_media_dir):
-        logger.warning(f"Sorted media directory not found: {sorted_media_dir}")
-        return
+    ensure_directory_exists(sorted_media_dir)
 
     # Walk through each year and month folder in Sorted_Media
     for year in os.listdir(sorted_media_dir):
@@ -208,10 +202,5 @@ def delete_duplicates_folders(dry_run=True):
                 if dry_run:
                     logger.info(f"[DRY RUN] Would delete folder: {duplicates_folder}")
                 else:
-                    try:
-                        shutil.rmtree(duplicates_folder)
-                        logger.info(f"Deleted folder: {duplicates_folder}")
-                    except PermissionError:
-                        logger.warning(f"Permission denied: {duplicates_folder}")
-                    except OSError as e:
-                        logger.warning(f"Error deleting {duplicates_folder}: {e}")
+                    shutil.rmtree(duplicates_folder)
+                    logger.info(f"Deleted folder: {duplicates_folder}")
