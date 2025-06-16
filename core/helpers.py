@@ -56,3 +56,29 @@ def validate_source_dir(source_dir):
         raise DirectoryNotFoundError(f"Source directory does not exist: {source_dir}")
 
     return True
+
+def safe_create_directory(parent_path, folder_name):
+    """
+    Create a new folder under parent_path with folder_name.
+    If a folder with the name exists, append a counter suffix (e.g., folder_1, folder_2, ...).
+
+    Returns the Path to the created directory.
+    """
+    base_path = parent_path / folder_name
+    candidate = base_path
+    counter = 1
+
+    while candidate.exists():
+        candidate = parent_path / f"{folder_name}_{counter}"
+        counter += 1
+
+    os.makedirs(candidate)
+    return candidate
+
+def get_nonconflicting_path(path):
+    base, ext = os.path.splitext(path)
+    counter = 1
+    while os.path.exists(path):
+        path = f"{base}_{counter}{ext}"
+        counter += 1
+    return path

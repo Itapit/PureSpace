@@ -54,6 +54,9 @@ class Logger(metaclass=SingletonMeta):
 
     def debug(self, message):
         self.logger.debug(message)
+    
+    def exception(self, message):
+        self.logger.exception(message)
 
 
 # Config Class using Singleton Metaclass

@@ -1,5 +1,6 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox, scrolledtext
+from tkinter import filedialog, messagebox, scrolledtext, simpledialog
+from binascii import Error as BinasciiError
 import os
 import sys
 import re
@@ -66,6 +67,19 @@ class MediaOrganizerApp:
             self.move_unwanted_files,
             "moves all of the unwanted file extensions and specific file names",
             ["source_dir", "unwanted_files", "unwanted_extensions"]
+        )
+        self.create_action_button(
+            "Encrypt Directory",
+            self.encrypt_directory_handler,
+            "Encrypt all files using AES-256-CBC. You will be prompted for key and IV (hex).",
+            ["source_dir"]
+        )
+
+        self.create_action_button(
+            "Decrypt Directory",
+            self.decrypt_directory_handler,
+            "Decrypt AES-256-CBC encrypted files. You will be prompted for key and IV (hex).",
+            ["source_dir"]
         )
 
         # Log Output
@@ -240,6 +254,50 @@ class MediaOrganizerApp:
         - Run the program in 'dry_run' mode first to preview changes.
         """
         messagebox.showinfo("How to Use", help_text)
+    
+
+    def encrypt_directory_handler(self, dry_run, _extra=None):
+        key_hex = simpledialog.askstring("Enter AES-256 Key", "Enter 64-character hexadecimal key (256-bit):", parent=self.root)
+        iv_hex = simpledialog.askstring("Enter AES IV", "Enter 32-character hexadecimal IV (128-bit):", parent=self.root)
+
+        if not key_hex or not iv_hex:
+            messagebox.showerror("Missing Input", "Key and IV must both be provided.")
+            return
+
+        try:
+            key = bytes.fromhex(key_hex)
+            iv = bytes.fromhex(iv_hex)
+        except Exception:
+            messagebox.showerror("Invalid Format", "Key or IV must be valid hexadecimal.")
+            return
+
+        if len(key) != 32 or len(iv) != 16:
+            messagebox.showerror("Invalid Length", "Key must be 64 hex chars, IV must be 32 hex chars.")
+            return
+
+        encrypt_directory(config.get("source_dir"), key=key, iv=iv, dry_run=dry_run)
+
+    def decrypt_directory_handler(self, dry_run, _extra=None):
+        key_hex = simpledialog.askstring("Enter AES-256 Key", "Enter 64-character hexadecimal key (256-bit):", parent=self.root)
+        iv_hex = simpledialog.askstring("Enter AES IV", "Enter 32-character hexadecimal IV (128-bit):", parent=self.root)
+
+        if not key_hex or not iv_hex:
+            messagebox.showerror("Missing Input", "Key and IV must both be provided.")
+            return
+
+        try:
+            key = bytes.fromhex(key_hex)
+            iv = bytes.fromhex(iv_hex)
+        except Exception:
+            messagebox.showerror("Invalid Format", "Key or IV must be valid hexadecimal.")
+            return
+
+        if len(key) != 32 or len(iv) != 16:
+            messagebox.showerror("Invalid Length", "Key must be 64 hex chars, IV must be 32 hex chars.")
+            return
+
+        decrypt_directory(config.get("source_dir"), key=key, iv=iv, dry_run=dry_run)
+
 
 def check_dependencies():
     """Checks system dependencies and alerts the user if something is missing."""
